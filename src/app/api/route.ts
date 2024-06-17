@@ -1,25 +1,45 @@
-// Next.js Custom Route Handler: https://nextjs.org/docs/app/building-your-application/routing/router-handlers
-import { createSchema, createYoga } from 'graphql-yoga'
- 
+import { PrismaClient } from "@prisma/client";
+import { readFileSync } from "fs";
+import { createSchema, createYoga } from "graphql-yoga";
+import { join } from "path";
+
+import { Resolvers } from "@/generated/graphql";
+
+import { prisma } from "@/lib/prisma";
+
+export type GraphQLContext = {
+  prisma: PrismaClient;
+};
+
+export async function createContext(): Promise<GraphQLContext> {
+  return {
+    prisma,
+  };
+}
+
+const typeDefs = readFileSync(join(process.cwd(), "schema.graphql"), {
+  encoding: "utf-8",
+});
+
+const resolvers: Resolvers = {
+  Query: {
+    cart: (_, { id }) => ({ id, totalItems: 0 }),
+  },
+};
+
 const { handleRequest } = createYoga({
   schema: createSchema({
-    typeDefs: /* GraphQL */ `
-      type Query {
-        greetings: String
-      }
-    `,
-    resolvers: {
-      Query: {
-        greetings: () => 'This is the `greetings` field of the root `Query` type'
-      }
-    }
+    typeDefs,
+    resolvers,
   }),
- 
-  // While using Next.js file convention for routing, we need to configure Yoga to use the correct endpoint
-  graphqlEndpoint: '/api',
- 
-  // Yoga needs to know how to create a valid Next response
-  fetchAPI: { Response }
-})
- 
-export { handleRequest as GET, handleRequest as POST, handleRequest as OPTIONS }
+
+  graphqlEndpoint: "/api",
+  context: createContext(),
+  fetchAPI: { Response },
+});
+
+export {
+  handleRequest as GET,
+  handleRequest as POST,
+  handleRequest as OPTIONS,
+};
