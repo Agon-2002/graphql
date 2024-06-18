@@ -1,4 +1,5 @@
 import { GraphQLResolveInfo } from 'graphql';
+import { Cart as CartModel, CartItem as CartItemModel } from '@prisma/client';
 import { GraphQLContext } from '../../src/app/api/route';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -17,10 +18,61 @@ export type Scalars = {
   Float: { input: number; output: number; }
 };
 
+export type AddToCartInput = {
+  cartId: Scalars['ID']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['String']['input'];
+  image?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  price: Scalars['Int']['input'];
+  quantity?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type Cart = {
   __typename?: 'Cart';
   id: Scalars['ID']['output'];
+  items: Array<CartItem>;
+  subTotal: Money;
   totalItems: Scalars['Int']['output'];
+};
+
+export type CartItem = {
+  __typename?: 'CartItem';
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+  totalPrice: Money;
+  unitPrice: Money;
+};
+
+export type Money = {
+  __typename?: 'Money';
+  amount: Scalars['Int']['output'];
+  formatted: Scalars['String']['output'];
+};
+
+export type Mutation = {
+  __typename?: 'Mutation';
+  addItem?: Maybe<Cart>;
+  increaseCartItem?: Maybe<Cart>;
+  removeItem?: Maybe<Cart>;
+};
+
+
+export type MutationAddItemArgs = {
+  input: AddToCartInput;
+};
+
+
+export type MutationIncreaseCartItemArgs = {
+  input: IncreaseCartItemInput;
+};
+
+
+export type MutationRemoveItemArgs = {
+  input: RemoveFromCartInput;
 };
 
 export type Query = {
@@ -30,6 +82,16 @@ export type Query = {
 
 
 export type QueryCartArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type RemoveFromCartInput = {
+  cartId: Scalars['ID']['input'];
+  id: Scalars['ID']['input'];
+};
+
+export type IncreaseCartItemInput = {
+  cartId: Scalars['ID']['input'];
   id: Scalars['ID']['input'];
 };
 
@@ -104,28 +166,65 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AddToCartInput: AddToCartInput;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
-  Cart: ResolverTypeWrapper<Cart>;
+  Cart: ResolverTypeWrapper<CartModel>;
+  CartItem: ResolverTypeWrapper<CartItemModel>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  Money: ResolverTypeWrapper<Money>;
+  Mutation: ResolverTypeWrapper<{}>;
   Query: ResolverTypeWrapper<{}>;
+  RemoveFromCartInput: RemoveFromCartInput;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  increaseCartItemInput: IncreaseCartItemInput;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  AddToCartInput: AddToCartInput;
   Boolean: Scalars['Boolean']['output'];
-  Cart: Cart;
+  Cart: CartModel;
+  CartItem: CartItemModel;
   ID: Scalars['ID']['output'];
   Int: Scalars['Int']['output'];
+  Money: Money;
+  Mutation: {};
   Query: {};
+  RemoveFromCartInput: RemoveFromCartInput;
   String: Scalars['String']['output'];
+  increaseCartItemInput: IncreaseCartItemInput;
 };
 
 export type CartResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Cart'] = ResolversParentTypes['Cart']> = {
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  items?: Resolver<Array<ResolversTypes['CartItem']>, ParentType, ContextType>;
+  subTotal?: Resolver<ResolversTypes['Money'], ParentType, ContextType>;
   totalItems?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CartItemResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['CartItem'] = ResolversParentTypes['CartItem']> = {
+  description?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  image?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  quantity?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalPrice?: Resolver<ResolversTypes['Money'], ParentType, ContextType>;
+  unitPrice?: Resolver<ResolversTypes['Money'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type MoneyResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Money'] = ResolversParentTypes['Money']> = {
+  amount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  formatted?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type MutationResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Mutation'] = ResolversParentTypes['Mutation']> = {
+  addItem?: Resolver<Maybe<ResolversTypes['Cart']>, ParentType, ContextType, RequireFields<MutationAddItemArgs, 'input'>>;
+  increaseCartItem?: Resolver<Maybe<ResolversTypes['Cart']>, ParentType, ContextType, RequireFields<MutationIncreaseCartItemArgs, 'input'>>;
+  removeItem?: Resolver<Maybe<ResolversTypes['Cart']>, ParentType, ContextType, RequireFields<MutationRemoveItemArgs, 'input'>>;
 };
 
 export type QueryResolvers<ContextType = GraphQLContext, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
@@ -134,6 +233,9 @@ export type QueryResolvers<ContextType = GraphQLContext, ParentType extends Reso
 
 export type Resolvers<ContextType = GraphQLContext> = {
   Cart?: CartResolvers<ContextType>;
+  CartItem?: CartItemResolvers<ContextType>;
+  Money?: MoneyResolvers<ContextType>;
+  Mutation?: MutationResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
 };
 

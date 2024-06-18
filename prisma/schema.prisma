@@ -12,3 +12,22 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Cart {
+  id String @id @default(cuid())
+  items CartItem[]
+}
+
+model CartItem {
+  id String  @default(cuid())
+  name String 
+  description String?
+  price Int
+  quantity Int
+  image String?
+
+  cartId String
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@id([cartId, id])
+}
