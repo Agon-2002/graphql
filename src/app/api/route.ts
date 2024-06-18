@@ -2,12 +2,15 @@ import { PrismaClient } from "@prisma/client";
 import currencyFormatter from "currency-formatter";
 import { readFileSync } from "fs";
 import { createSchema, createYoga } from "graphql-yoga";
+
 import { join } from "path";
 
 import { Resolvers } from "@/generated/graphql";
 
 import { findOrCreateCart } from "@/lib/cart";
 import { prisma } from "@/lib/prisma";
+import { GraphQLError } from "graphql";
+import { stripe } from "@/lib/stripe";
 
 export type GraphQLContext = {
   prisma: PrismaClient;
@@ -92,6 +95,89 @@ const resolvers: Resolvers = {
         }
       })
       return findOrCreateCart(prisma, cartId); 
+    },
+    decreaseCartItem:  async (_, { input }, { prisma }) => {
+      const {cartId, quantity} = await prisma.cartItem.update({
+        data: {
+          quantity: {
+            decrement: 1
+          }
+        },
+        where: {
+          cartId_id: {
+            id: input.id,
+            cartId: input.cartId,
+          }
+        },
+        select: {
+          cartId: true,
+          quantity: true
+        }
+      })
+      if (quantity <= 0) {
+        await prisma.cartItem.delete({
+          where: {
+            cartId_id: {
+              id: input.id,
+              cartId: input.cartId,
+            },
+          },
+          select: {
+            cartId: true
+          }
+        });
+      }
+
+      return findOrCreateCart(prisma, cartId); 
+    },
+    createCheckoutSession: async (_, { input }, { prisma }) => {
+      const {cartId} = input;
+      const cart = await prisma.cart.findUnique({
+        where: {
+          id: cartId
+        }
+      })
+      
+      if(!cart) {
+        throw new GraphQLError('Cart not found');
+      }
+      
+      const cartItems = await prisma.cart.findUnique({
+        where: {
+          id: cartId
+        },
+      }).items()
+      
+      if(!cartItems || cartItems.length === 0) {
+        throw new GraphQLError('Cart is empty');
+      }
+
+      const total_items = cartItems.map(item => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: currencyCode,
+          unit_amount: item.price,
+          product_data: {
+            name: item.name,
+            description: item.description || undefined, 
+            images: item.image ? [item.image] : undefined
+          }
+        }})
+      )
+      
+      const session = await stripe.checkout.sessions.create({
+        line_items: total_items,
+        mode: 'payment',
+        metadata: {
+          cartId: cart.id
+        },
+        success_url: "http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: "http://localhost:3000/cart?cancelled=true",
+      })
+      return {
+        id: session.id,
+        url: session.url
+      }
     }
     
   },
